@@ -103,3 +103,19 @@ dkms.conf
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+
+
+# NachOS
+build.linux/nachos
+*.coff
+*/DISK_0
+test/add
+test/ascii
+test/halt
+test/help
+test/matmult
+test/ori_sort
+test/segments
+test/shell
+test/sort
