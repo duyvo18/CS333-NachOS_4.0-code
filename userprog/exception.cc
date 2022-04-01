@@ -161,7 +161,11 @@ void ExceptionHandler(ExceptionType which)
 
 		case SC_ReadNum:
 		{
+			DEBUG(dbgSys, "Reading an integer.\n");
+
 			int num = SysReadNum();
+			DEBUG(dbgSys, "Num: " << num << "\n");
+
 			kernel->machine->WriteRegister(2, num);
 
 			IncreasePC();
@@ -172,7 +176,11 @@ void ExceptionHandler(ExceptionType which)
 
 		case SC_ReadChar:
 		{
+			DEBUG(dbgSys, "Reading a character.\n");
+
 			int c = SysReadChar();
+			DEBUG(dbgSys, "Char: " << c << "\n");
+
 			kernel->machine->WriteRegister(2, (int)c);
 
 			IncreasePC();
@@ -183,7 +191,62 @@ void ExceptionHandler(ExceptionType which)
 
 		case SC_ReadString:
 		{
+			DEBUG(dbgSys, "Reading a string.\n");
+
 			SysReadString((int)kernel->machine->ReadRegister(4), (int)kernel->machine->ReadRegister(5));
+
+			IncreasePC();
+			return;
+
+			ASSERTNOTREACHED();
+		}
+
+		case SC_Open:
+		{
+			DEBUG(dbgSys, "Opening a file.\n");
+
+			int openFileAddr = SysOpenFile(kernel->machine->ReadRegister(4));
+
+			if (openFileAddr == NULL)
+			{
+				DEBUG(dbgSys, "Unable to open file.\n");
+			}
+			else
+			{
+				DEBUG(dbgSys, "Opened file at " << openFileAddr << ".\n");
+			}
+
+			kernel->machine->WriteRegister(2, openFileAddr);
+
+			IncreasePC();
+			return;
+
+			ASSERTNOTREACHED();
+		}
+
+		case SC_Close:
+		{
+			DEBUG(dbgSys, "Closing a file.\n");
+
+			int flag = SysCloseFile(kernel->machine->ReadRegister(4));
+			DEBUG(dbgSys, "Closed file with return flag " << flag << ".\n");
+
+			kernel->machine->WriteRegister(2, flag);
+
+			IncreasePC();
+			return;
+
+			ASSERTNOTREACHED();
+		}
+
+		case SC_Seek:
+		{
+			DEBUG(dbgSys, "Seeking a file.\n");
+
+			int pos = SysSeekFile(kernel->machine->ReadRegister(4), kernel->machine->ReadRegister(5));
+			DEBUG(dbgSys, "Seek to offset " << pos << ".\n");
+
+			kernel->machine->WriteRegister(2, pos);
 
 			IncreasePC();
 			return;

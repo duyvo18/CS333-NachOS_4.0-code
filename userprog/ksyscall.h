@@ -212,4 +212,36 @@ void SysReadString(int buffer, int length)
   delete kerSpace;
 }
 
+int SysOpenFile(int userStrBuffer)
+{
+  char *kernelBuffer = UserToKernel(userStrBuffer, 1000);
+  
+  return (int)kernel->fileSystem->Open(kernelBuffer);
+}
+
+int SysCloseFile(int openFileAddr)
+{
+  if (openFileAddr == NULL)
+    return -1;
+
+  delete (OpenFile*)openFileAddr;
+
+  return 1;
+}
+
+int SysSeekFile(int pos, int openFileAddr)
+{
+  if (openFileAddr == NULL)
+    return -1;
+
+  OpenFile* file = (OpenFile*)openFileAddr;
+  
+  if (pos == -1)
+    pos = file->Length();
+  
+  file->Seek(pos);
+
+  return file->Read(NULL, 0);
+}
+
 #endif /* ! __USERPROG_KSYSCALL_H__ */

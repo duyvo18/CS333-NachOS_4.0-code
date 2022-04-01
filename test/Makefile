@@ -112,7 +112,7 @@ ifeq ($(hosttype),unknown)
 PROGRAMS = unknownhost
 else
 # change this if you create a new test program!
-PROGRAMS = add halt shell matmult ori_sort segments help ascii sort
+PROGRAMS = add halt shell matmult ori_sort segments help ascii sort create
 endif
 
 all: $(PROGRAMS)
@@ -174,6 +174,12 @@ sort.o: sort.c
 sort: sort.o start.o
 	$(LD) $(LDFLAGS) start.o sort.o -o sort.coff
 	$(COFF2NOFF) sort.coff sort
+
+create.o: create.c
+	$(CC) $(CFLAGS) -c create.c
+create: create.o start.o
+	$(LD) $(LDFLAGS) start.o create.o -o create.coff
+	$(COFF2NOFF) create.coff create
 
 clean:
 	$(RM) -f *.o *.ii
