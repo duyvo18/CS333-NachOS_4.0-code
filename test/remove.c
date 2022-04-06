@@ -2,6 +2,6 @@
 
 int main(int argc, char** argv)
 {
-    Create(argv[1]);
+    Remove(argv[1]);
     Halt();
 }

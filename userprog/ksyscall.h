@@ -212,18 +212,67 @@ void SysReadString(int buffer, int length)
   delete kerSpace;
 }
 
+int SysCreate(int userBuffer)
+{
+  DEBUG(dbgSys, userBuffer);
+  // Copy buffer from user virual memory to kernel
+  char *kernelBuff = UserToKernel(userBuffer, 1000);
+  DEBUG(dbgSys, kernelBuff);
+
+  // Find the length of the buffer
+  int length = 0;
+  while (kernelBuff[length] != '\0')
+    ++length;
+
+  bool res = kernel->fileSystem->Create(kernelBuff);
+  delete kernelBuff;
+  if (res == true)
+    return 0;
+  else
+    return -1;
+}
+
+int SysRemove(int userBuffer)
+{
+  DEBUG(dbgSys, userBuffer);
+  // Copy buffer from user virual memory to kernel
+  char *kernelBuff = UserToKernel(userBuffer, 1000);
+  DEBUG(dbgSys, kernelBuff);
+
+  // Find the length of the buffer
+  int length = 0;
+  while (kernelBuff[length] != '\0')
+    ++length;
+
+  //if file not open
+  bool res = kernel->fileSystem->Remove(kernelBuff);
+  //elif file open
+  //return -1
+  delete kernelBuff;
+  if (res == true) //and file was not open
+    return 0;
+  else //file delete fail or file was open
+    return -1;
+}
+
 int SysOpenFile(int userStrBuffer)
 {
+  // Transfer str from user buffer to kernel
+  DEBUG(dbgSys, userStrBuffer);
   char *kernelBuffer = UserToKernel(userStrBuffer, 1000);
-  
+  DEBUG(dbgSys, kernelBuffer);
+
+  // return the addr of OpenFile object as OpenFileID
   return (int)kernel->fileSystem->Open(kernelBuffer);
 }
 
 int SysCloseFile(int openFileAddr)
 {
+  // the OpenFile object is null when the file failed to open
   if (openFileAddr == NULL)
     return -1;
 
+  // delete the OpenFile object is closing the file
   delete (OpenFile*)openFileAddr;
 
   return 1;
@@ -231,17 +280,28 @@ int SysCloseFile(int openFileAddr)
 
 int SysSeekFile(int pos, int openFileAddr)
 {
+  // the OpenFile object is null when the file failed to open
   if (openFileAddr == NULL)
     return -1;
 
+  // type cast the addr to OpenFile pointer
   OpenFile* file = (OpenFile*)openFileAddr;
   
+  // if pos=-1 then get the length of the file, which is also EOF
   if (pos == -1)
     pos = file->Length();
   
-  file->Seek(pos);
+  // seek by reading to a temp buffer
+  int res = file->Read(NULL, pos);
 
-  return file->Read(NULL, 0);
+  // if the final offset is equals to pos
+  // then the read operation successed
+  // also means the position is seekable
+  //
+  // otherwise return -1 if final offset is
+  // -1 for error
+  // and 0 for pos > EOF
+  return res == pos ? pos : -1;
 }
 
 #endif /* ! __USERPROG_KSYSCALL_H__ */

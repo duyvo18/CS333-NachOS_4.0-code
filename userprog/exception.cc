@@ -201,9 +201,39 @@ void ExceptionHandler(ExceptionType which)
 			ASSERTNOTREACHED();
 		}
 
+		case SC_Create:
+		{
+			DEBUG(dbgSys, "Creating a file.\n");
+
+			int res = SysCreate((int)kernel->machine->ReadRegister(4));
+			kernel->machine->WriteRegister(2, res);
+			
+			DEBUG(dbgSys, "Create file return " << res << ".\n");
+
+			IncreasePC();
+			return;
+
+			ASSERTNOTREACHED();
+		}
+
+		case SC_Remove:
+		{
+			DEBUG(dbgSys, "Removing a file.\n");
+
+			int res = SysRemove((int)kernel->machine->ReadRegister(4));
+			kernel->machine->WriteRegister(2, res);
+			
+			DEBUG(dbgSys, "Remove file return " << res << ".\n");
+
+			IncreasePC();
+			return;
+
+			ASSERTNOTREACHED();
+		}
+
 		case SC_Open:
 		{
-			DEBUG(dbgSys, "Opening a file.\n");
+			DEBUG(dbgSys, "Opening file.\n");
 
 			int openFileAddr = SysOpenFile(kernel->machine->ReadRegister(4));
 
