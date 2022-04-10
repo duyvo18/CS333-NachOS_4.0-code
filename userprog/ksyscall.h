@@ -36,7 +36,7 @@ char *UserToKernel(int userAddr, int size)
     return kernBuffer;
 
   // Empty kernel buffer
-  memset(kernBuffer, 0, size + 1);
+  memset(kernBuffer, '\0', size + 1);
 
   // Write user buffer to kernel buffer
   for (int i = 0; i < size; ++i)
@@ -82,6 +82,8 @@ int KernelToUser(int userAddr, int bufferLimit, char kernBuffer[])
 
     ++i;
   } while (i < bufferLimit && tmp != 0);
+
+  kernel->machine->WriteMem(userAddr + i, 1, '\0');
 
   return i;
 }
@@ -192,13 +194,18 @@ char SysReadChar()
 void SysReadString(int buffer, int length)
 {
   char *kerSpace = new char[length + 1]; // new space as kernel space
+
+  memset(kerSpace, '\0', length + 1); // Initialized the kernel space with end of string
+
   for (int i = 0; i < length; ++i)
   {
-    kerSpace[i] = kernel->synchConsoleIn->GetChar(); // Get char to kernel space directly not through kernel->machine->ReadMem()
-    if (kerSpace[i] == '\0' || kerSpace[i] == '\n')  // check the end of string
+    char tmp = kernel->synchConsoleIn->GetChar(); // Get char to kernel space directly not through kernel->machine->ReadMem()
+
+    if (tmp == '\0' || tmp == '\n') // check the end of string
       break;
+
+    kerSpace[i] = tmp;
   }
-  kerSpace[length] = '\0'; // Put end of the string to that kernel space
 
   int tmp = 0;
   int i = 0;
@@ -214,10 +221,9 @@ void SysReadString(int buffer, int length)
 
 int SysCreate(int userBuffer)
 {
-  DEBUG(dbgSys, userBuffer);
   // Copy buffer from user virual memory to kernel
   char *kernelBuff = UserToKernel(userBuffer, 1000);
-  DEBUG(dbgSys, kernelBuff);
+  DEBUG(dbgSys, "File name input: \"" << kernelBuff << "\".\n");
 
   // Find the length of the buffer
   int length = 0;
@@ -225,7 +231,8 @@ int SysCreate(int userBuffer)
     ++length;
 
   bool res = kernel->fileSystem->Create(kernelBuff);
-  delete kernelBuff;
+  delete[] kernelBuff;
+
   if (res == true)
     return 0;
   else
@@ -234,33 +241,31 @@ int SysCreate(int userBuffer)
 
 int SysRemove(int userBuffer)
 {
-  DEBUG(dbgSys, userBuffer);
   // Copy buffer from user virual memory to kernel
   char *kernelBuff = UserToKernel(userBuffer, 1000);
-  DEBUG(dbgSys, kernelBuff);
+  DEBUG(dbgSys, "File name input: \"" << kernelBuff << "\".\n");
 
   // Find the length of the buffer
   int length = 0;
   while (kernelBuff[length] != '\0')
     ++length;
 
-  //if file not open
+  // if file not open
   bool res = kernel->fileSystem->Remove(kernelBuff);
-  //elif file open
-  //return -1
+  // elif file open
+  // return -1
   delete kernelBuff;
-  if (res == true) //and file was not open
+  if (res == true) // and file was not open
     return 0;
-  else //file delete fail or file was open
+  else // file delete fail or file was open
     return -1;
 }
 
 int SysOpenFile(int userStrBuffer)
 {
   // Transfer str from user buffer to kernel
-  DEBUG(dbgSys, userStrBuffer);
   char *kernelBuffer = UserToKernel(userStrBuffer, 1000);
-  DEBUG(dbgSys, kernelBuffer);
+  DEBUG(dbgSys, "File name input: \"" << kernelBuffer << "\".\n");
 
   // return the addr of OpenFile object as OpenFileID
   return (int)kernel->fileSystem->Open(kernelBuffer);
@@ -268,39 +273,90 @@ int SysOpenFile(int userStrBuffer)
 
 int SysCloseFile(int openFileAddr)
 {
-  // the OpenFile object is null when the file failed to open
-  if (openFileAddr == NULL)
+  // If OpenFile object is null (cannot open file), or is Console IO
+  if (openFileAddr == 0 || openFileAddr == 1)
     return -1;
 
-  // delete the OpenFile object is closing the file
-  delete (OpenFile*)openFileAddr;
+  DEBUG(dbgSys, "OpenFile addr: " << openFileAddr << ".\n");
+  OpenFile *file = (OpenFile *)openFileAddr;
 
-  return 1;
+  // delete the OpenFile object is closing the file
+  delete file;
+
+  return 0;
+}
+
+int SysRead(char *buffer, int size, int id)
+{
+  if (size < 0 || id == 1)
+  {
+    return -1;
+  }
+
+  if (id == 0)
+  {
+    for (int i = 0; i < size; ++i)
+    {
+      buffer[i] = kernel->synchConsoleIn->GetChar();
+      if (buffer[i] == EOF)
+      {
+        buffer[i] = 0;
+        return -2;
+      }
+      return size;
+    }
+  }
+
+  OpenFile *file = (OpenFile *)id;
+
+  int charRead = file->Read(buffer, size);
+
+  return charRead;
+}
+
+int SysWrite(char *buffer, int size, int id)
+{
+  if (size < 0 || id <= 0)
+  {
+    return -1;
+  }
+
+  if (id == 1)
+  {
+    for (int i = 0; i < size; ++i)
+      kernel->synchConsoleOut->PutChar(buffer[i]);
+    return size;
+  }
+
+  OpenFile *file = (OpenFile *)id;
+
+  int charWrite = file->Write(buffer, size);
+  return charWrite;
 }
 
 int SysSeekFile(int pos, int openFileAddr)
 {
-  // the OpenFile object is null when the file failed to open
-  if (openFileAddr == NULL)
+  // If OpenFile object is null (cannot open file), or is Console IO
+  if (openFileAddr == 0 || openFileAddr == 1)
     return -1;
 
   // type cast the addr to OpenFile pointer
-  OpenFile* file = (OpenFile*)openFileAddr;
-  
-  // if pos=-1 then get the length of the file, which is also EOF
+  OpenFile *file = (OpenFile *)openFileAddr;
+
+  // if pos=-1 then get the length of the file, which is EOF offset
   if (pos == -1)
+  {
     pos = file->Length();
-  
+  }
+
   // seek by reading to a temp buffer
-  int res = file->Read(NULL, pos);
+  char *tmp = new char[pos + 1];
+  int res = file->Read(tmp, pos);
+  delete[] tmp;
 
   // if the final offset is equals to pos
-  // then the read operation successed
-  // also means the position is seekable
-  //
-  // otherwise return -1 if final offset is
-  // -1 for error
-  // and 0 for pos > EOF
+  // then the input offset is seekable (valid offset)
+  // otherwise return -1
   return res == pos ? pos : -1;
 }
 

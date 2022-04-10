@@ -1,32 +1,45 @@
 #include "syscall.h"
 
-int main(int argc, char **argv)
+int main()
 {
-    char *tmp[100];
-    int byteRead = 100;
-    
-    int srcOpenFile = Open(argv[1]);
-    int destOpenFile = Open(argv[2]);
+    int srcFile, dstFile;
 
-    PrintString("\n > File opened\n");
-    
+    char *srcFilename = "source.txt";
+    char *destFilename = "destination.txt";
 
-    // PrintString("\n> Seeking to dest EOF...\n");
-    // Seek(-1, destOpenFile);
+    char *destContent = "This is content. ";
+    char *srcContent = "Yes, yes it is.";
 
-    // PrintString("\n> Writing to dest...\n");
-    // do
-    // {
-    //     byteRead = Read(tmp, 100, srcOpenFile);
-    //     Write(tmp, 100, destOpenFile);
-    // } while (byteRead != 100);
-    
-    // PrintString("\n> Closing files...\n");
-    // Close(srcOpenFile);
-    // Close(destOpenFile);
-    
-    PrintString("\n> Program ended\n");
+    int maxLen = 100;
+    char *tmp[maxLen];
 
+    int byteRead;
+
+    // Create and write to file
+    Create(srcFilename);
+    Create(destFilename);
+
+    srcFile = Open(srcFilename);
+    dstFile = Open(destFilename);
+
+    Write(srcContent, maxLen, srcFile);
+    Write(destContent, maxLen, dstFile);
+
+    Close(srcFile);
+    Close(dstFile);
+
+    // Concatenate srcFile to the end of destFile
+    srcFile = Open(srcFilename);
+    dstFile = Open(destFilename);
+
+    Seek(-1, dstFile);
+
+    byteRead = Read(tmp, maxLen, srcFile);
+    Write(tmp, maxLen, dstFile);
+
+    Close(srcFile);
+    Close(dstFile);
+    
     Halt();
     /* not reached */
 }

@@ -57,329 +57,376 @@
 
 void ExceptionHandler(ExceptionType which)
 {
-	int type = kernel->machine->ReadRegister(2);
+  int type = kernel->machine->ReadRegister(2);
 
-	DEBUG(dbgSys, "Received Exception " << which << " type: " << type << "\n");
+  DEBUG(dbgSys, "Received Exception " << which << " type: " << type << "\n");
 
-	switch (which)
-	{
-	case SyscallException:
-		switch (type)
-		{
-		case SC_Halt:
-		{
-			DEBUG(dbgSys, "Shutdown, initiated by user program.\n");
+  switch (which)
+  {
+  case SyscallException:
+    switch (type)
+    {
+    case SC_Halt:
+    {
+      DEBUG(dbgSys, "Shutdown, initiated by user program.\n");
 
-			SysHalt();
+      SysHalt();
 
-			ASSERTNOTREACHED();
-			break;
-		}
+      ASSERTNOTREACHED();
+      break;
+    }
 
-		case SC_Add:
-		{
-			DEBUG(dbgSys, "Add " << kernel->machine->ReadRegister(4) << " + " << kernel->machine->ReadRegister(5) << "\n");
+    case SC_Add:
+    {
+      DEBUG(dbgSys, "Add " << kernel->machine->ReadRegister(4) << " + " << kernel->machine->ReadRegister(5) << "\n");
 
-			/* Process SysAdd Systemcall*/
-			int result;
-			result = SysAdd(/* int op1 */ (int)kernel->machine->ReadRegister(4),
-							/* int op2 */ (int)kernel->machine->ReadRegister(5));
+      /* Process SysAdd Systemcall*/
+      int result;
+      result = SysAdd(/* int op1 */ (int)kernel->machine->ReadRegister(4),
+                      /* int op2 */ (int)kernel->machine->ReadRegister(5));
 
-			DEBUG(dbgSys, "Add returning with " << result << "\n");
-			/* Prepare Result */
-			kernel->machine->WriteRegister(2, (int)result);
+      DEBUG(dbgSys, "Add returning with " << result << "\n");
+      /* Prepare Result */
+      kernel->machine->WriteRegister(2, (int)result);
 
-			/* Modify return point */
-			{
-				/* set previous programm counter (debugging only)*/
-				kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
+      /* Modify return point */
+      {
+        /* set previous programm counter (debugging only)*/
+        kernel->machine->WriteRegister(PrevPCReg, kernel->machine->ReadRegister(PCReg));
 
-				/* set programm counter to next instruction (all Instructions are 4 byte wide)*/
-				kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
+        /* set programm counter to next instruction (all Instructions are 4 byte wide)*/
+        kernel->machine->WriteRegister(PCReg, kernel->machine->ReadRegister(PCReg) + 4);
 
-				/* set next programm counter for brach execution */
-				kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
-			}
+        /* set next programm counter for brach execution */
+        kernel->machine->WriteRegister(NextPCReg, kernel->machine->ReadRegister(PCReg) + 4);
+      }
 
-			return;
+      return;
 
-			ASSERTNOTREACHED();
+      ASSERTNOTREACHED();
 
-			break;
-		}
+      break;
+    }
 
-		case SC_PrintNum:
-		{
-			DEBUG(dbgSys, "Printing an integer.\n");
+    case SC_PrintNum:
+    {
+      DEBUG(dbgSys, "Printing an integer.\n");
 
-			SysPrintNum(kernel->machine->ReadRegister(4));
+      SysPrintNum(kernel->machine->ReadRegister(4));
 
-			IncreasePC();
-			return;
+      IncreasePC();
+      return;
 
-			ASSERTNOTREACHED();
-		}
+      ASSERTNOTREACHED();
+    }
 
-		case SC_PrintChar:
-		{
-			DEBUG(dbgSys, "Printing a character.\n");
+    case SC_PrintChar:
+    {
+      DEBUG(dbgSys, "Printing a character.\n");
 
-			SysPrintChar(kernel->machine->ReadRegister(4));
+      SysPrintChar(kernel->machine->ReadRegister(4));
 
-			IncreasePC();
-			return;
+      IncreasePC();
+      return;
 
-			ASSERTNOTREACHED();
-		}
+      ASSERTNOTREACHED();
+    }
 
-		case SC_PrintString:
-		{
-			DEBUG(dbgSys, "Printing a string.\n");
+    case SC_PrintString:
+    {
+      DEBUG(dbgSys, "Printing a string.\n");
 
-			SysPrintString(kernel->machine->ReadRegister(4));
+      SysPrintString(kernel->machine->ReadRegister(4));
 
-			IncreasePC();
-			return;
+      IncreasePC();
+      return;
 
-			ASSERTNOTREACHED();
-		}
+      ASSERTNOTREACHED();
+    }
 
-		case SC_RandomNum:
-		{
-			DEBUG(dbgSys, "Generating a random integer.\n");
+    case SC_RandomNum:
+    {
+      DEBUG(dbgSys, "Generating a random integer.\n");
 
-			int num = SysRandomNum();
-			DEBUG(dbgSys, "Num: " << num << "\n");
+      int num = SysRandomNum();
+      DEBUG(dbgSys, "Num: " << num << "\n");
 
-			kernel->machine->WriteRegister(2, (int)num);
+      kernel->machine->WriteRegister(2, (int)num);
 
-			IncreasePC();
-			return;
+      IncreasePC();
+      return;
 
-			ASSERTNOTREACHED();
-		}
+      ASSERTNOTREACHED();
+    }
 
-		case SC_ReadNum:
-		{
-			DEBUG(dbgSys, "Reading an integer.\n");
+    case SC_ReadNum:
+    {
+      DEBUG(dbgSys, "Reading an integer.\n");
 
-			int num = SysReadNum();
-			DEBUG(dbgSys, "Num: " << num << "\n");
+      int num = SysReadNum();
+      DEBUG(dbgSys, "Num: " << num << "\n");
 
-			kernel->machine->WriteRegister(2, num);
+      kernel->machine->WriteRegister(2, num);
 
-			IncreasePC();
-			return;
+      IncreasePC();
+      return;
 
-			ASSERTNOTREACHED();
-		}
+      ASSERTNOTREACHED();
+    }
 
-		case SC_ReadChar:
-		{
-			DEBUG(dbgSys, "Reading a character.\n");
+    case SC_ReadChar:
+    {
+      DEBUG(dbgSys, "Reading a character.\n");
 
-			int c = SysReadChar();
-			DEBUG(dbgSys, "Char: " << c << "\n");
+      int c = SysReadChar();
+      DEBUG(dbgSys, "Char: " << c << "\n");
 
-			kernel->machine->WriteRegister(2, (int)c);
+      kernel->machine->WriteRegister(2, (int)c);
 
-			IncreasePC();
-			return;
+      IncreasePC();
+      return;
 
-			ASSERTNOTREACHED();
-		}
+      ASSERTNOTREACHED();
+    }
 
-		case SC_ReadString:
-		{
-			DEBUG(dbgSys, "Reading a string.\n");
+    case SC_ReadString:
+    {
+      DEBUG(dbgSys, "Reading a string.\n");
 
-			SysReadString((int)kernel->machine->ReadRegister(4), (int)kernel->machine->ReadRegister(5));
+      SysReadString((int)kernel->machine->ReadRegister(4), (int)kernel->machine->ReadRegister(5));
 
-			IncreasePC();
-			return;
+      IncreasePC();
+      return;
 
-			ASSERTNOTREACHED();
-		}
+      ASSERTNOTREACHED();
+    }
 
-		case SC_Create:
-		{
-			DEBUG(dbgSys, "Creating a file.\n");
+    case SC_Create:
+    {
+      DEBUG(dbgSys, "Creating a file.\n");
 
-			int res = SysCreate((int)kernel->machine->ReadRegister(4));
-			kernel->machine->WriteRegister(2, res);
-			
-			DEBUG(dbgSys, "Create file return " << res << ".\n");
+      int res = SysCreate((int)kernel->machine->ReadRegister(4));
+      kernel->machine->WriteRegister(2, res);
 
-			IncreasePC();
-			return;
+      DEBUG(dbgSys, "Create file return " << res << ".\n");
 
-			ASSERTNOTREACHED();
-		}
+      IncreasePC();
+      return;
 
-		case SC_Remove:
-		{
-			DEBUG(dbgSys, "Removing a file.\n");
+      ASSERTNOTREACHED();
+    }
 
-			int res = SysRemove((int)kernel->machine->ReadRegister(4));
-			kernel->machine->WriteRegister(2, res);
-			
-			DEBUG(dbgSys, "Remove file return " << res << ".\n");
+    case SC_Remove:
+    {
+      DEBUG(dbgSys, "Removing a file.\n");
 
-			IncreasePC();
-			return;
+      int res = SysRemove((int)kernel->machine->ReadRegister(4));
+      kernel->machine->WriteRegister(2, res);
 
-			ASSERTNOTREACHED();
-		}
+      DEBUG(dbgSys, "Remove file return " << res << ".\n");
 
-		case SC_Open:
-		{
-			DEBUG(dbgSys, "Opening file.\n");
+      IncreasePC();
+      return;
 
-			int openFileAddr = SysOpenFile(kernel->machine->ReadRegister(4));
+      ASSERTNOTREACHED();
+    }
 
-			if (openFileAddr == NULL)
-			{
-				DEBUG(dbgSys, "Unable to open file.\n");
-			}
-			else
-			{
-				DEBUG(dbgSys, "Opened file at " << openFileAddr << ".\n");
-			}
+    case SC_Open:
+    {
+      DEBUG(dbgSys, "Opening file.\n");
 
-			kernel->machine->WriteRegister(2, openFileAddr);
+      int openFileAddr = SysOpenFile(kernel->machine->ReadRegister(4));
 
-			IncreasePC();
-			return;
+      if (openFileAddr == NULL)
+      {
+        DEBUG(dbgSys, "Unable to open file.\n");
+      }
+      else
+      {
+        DEBUG(dbgSys, "OpenFile addr: " << openFileAddr << ".\n");
+      }
 
-			ASSERTNOTREACHED();
-		}
+      kernel->machine->WriteRegister(2, openFileAddr);
 
-		case SC_Close:
-		{
-			DEBUG(dbgSys, "Closing a file.\n");
+      IncreasePC();
+      return;
 
-			int flag = SysCloseFile(kernel->machine->ReadRegister(4));
-			DEBUG(dbgSys, "Closed file with return flag " << flag << ".\n");
+      ASSERTNOTREACHED();
+    }
 
-			kernel->machine->WriteRegister(2, flag);
+    case SC_Close:
+    {
+      DEBUG(dbgSys, "Closing a file.\n");
 
-			IncreasePC();
-			return;
+      int flag = SysCloseFile(kernel->machine->ReadRegister(4));
+      DEBUG(dbgSys, "Close file return " << flag << ".\n");
 
-			ASSERTNOTREACHED();
-		}
+      kernel->machine->WriteRegister(2, flag);
 
-		case SC_Seek:
-		{
-			DEBUG(dbgSys, "Seeking a file.\n");
+      IncreasePC();
+      return;
 
-			int pos = SysSeekFile(kernel->machine->ReadRegister(4), kernel->machine->ReadRegister(5));
-			DEBUG(dbgSys, "Seek to offset " << pos << ".\n");
+      ASSERTNOTREACHED();
+    }
 
-			kernel->machine->WriteRegister(2, pos);
+    case SC_Read:
+    {
+      DEBUG(dbgSys, "Reading a file.\n");
 
-			IncreasePC();
-			return;
+      int virAdd = kernel->machine->ReadRegister(4);    // get address of buffer from register 4
+      int charCount = kernel->machine->ReadRegister(5); // get number of chars from register 5
+      int id = kernel->machine->ReadRegister(6);        // get OpenFie_ID from register 6
 
-			ASSERTNOTREACHED();
-		}
+      char *buffer = UserToKernel(virAdd, charCount);
 
-		default:
-		{
-			cerr << "Unexpected system call " << type << "\n";
-			break;
-		}
-		}
-		break;
+      kernel->machine->WriteRegister(2, SysRead(buffer, charCount, id));
+      KernelToUser(virAdd, charCount, buffer);
 
-	case NoException:
-	{
-		// Return control to system
-		kernel->interrupt->setStatus(SystemMode);
-		break;
-	}
+      delete[] buffer;
 
-	case PageFaultException:
-	{
-		cerr << "No valid translation found\n";
+      IncreasePC();
+      return;
 
-		DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
-		SysHalt();
+      ASSERTNOTREACHED();
+    }
 
-		ASSERTNOTREACHED();
-		break;
-	}
+    case SC_Write:
+    {
+      DEBUG(dbgSys, "Writing to a file.\n");
 
-	case ReadOnlyException:
-	{
-		cerr << "Attempted to write to \"read-only\" page\n";
+      int virAdd = kernel->machine->ReadRegister(4);    // get address of buffer from register 4
+      int charCount = kernel->machine->ReadRegister(5); // get number of chars from register 5
+      int id = kernel->machine->ReadRegister(6);        // get OpenFie_ID from register 6
 
-		DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
-		SysHalt();
+      char *buffer = UserToKernel(virAdd, charCount);
 
-		ASSERTNOTREACHED();
-		break;
-	}
+      // Find the length of the buffer
+      int length = 0;
+      while (buffer[length] != '\0')
+        ++length;
 
-	case BusErrorException:
-	{
-		cerr << "Translation resulted in an invalid physical address\n";
+      kernel->machine->WriteRegister(2, SysWrite(buffer, length, id));
 
-		DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
-		SysHalt();
+      delete[] buffer;
 
-		ASSERTNOTREACHED();
-		break;
-	}
+      IncreasePC();
+      return;
 
-	case AddressErrorException:
-	{
-		cerr << "Unaligned reference or one that was beyond the end of the address space\n";
+      ASSERTNOTREACHED();
+    }
 
-		DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
-		SysHalt();
+    case SC_Seek:
+    {
+      DEBUG(dbgSys, "Seeking a file.\n");
 
-		ASSERTNOTREACHED();
-		break;
-	}
+      int pos = SysSeekFile(kernel->machine->ReadRegister(4),
+                            kernel->machine->ReadRegister(5));
+      DEBUG(dbgSys, "Seek to offset " << pos << ".\n");
 
-	case OverflowException:
-	{
-		cerr << "Interger overflow in add or sub\n";
+      kernel->machine->WriteRegister(2, pos);
 
-		DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
-		SysHalt();
+      IncreasePC();
+      return;
 
-		ASSERTNOTREACHED();
-		break;
-	}
+      ASSERTNOTREACHED();
+    }
 
-	case IllegalInstrException:
-	{
-		cerr << "Unimplemented or reserved instruction\n";
+    default:
+    {
+      cerr << "Unexpected system call " << type << "\n";
+      break;
+    }
+    }
+    break;
 
-		DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
-		SysHalt();
+  case NoException:
+  {
+    // Return control to system
+    kernel->interrupt->setStatus(SystemMode);
+    break;
+  }
 
-		ASSERTNOTREACHED();
-		break;
-	}
+  case PageFaultException:
+  {
+    cerr << "No valid translation found\n";
 
-	case NumExceptionTypes:
-	{
-		cerr << "NumExceptionTypes\n";
+    DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
+    SysHalt();
 
-		DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
-		SysHalt();
+    ASSERTNOTREACHED();
+    break;
+  }
 
-		ASSERTNOTREACHED();
-		break;
-	}
-	default:
-	{
-		cerr << "Unexpected user mode exception" << (int)which << "\n";
-		break;
-	}
-	}
-	ASSERTNOTREACHED();
+  case ReadOnlyException:
+  {
+    cerr << "Attempted to write to \"read-only\" page\n";
+
+    DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
+    SysHalt();
+
+    ASSERTNOTREACHED();
+    break;
+  }
+
+  case BusErrorException:
+  {
+    cerr << "Translation resulted in an invalid physical address\n";
+
+    DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
+    SysHalt();
+
+    ASSERTNOTREACHED();
+    break;
+  }
+
+  case AddressErrorException:
+  {
+    cerr << "Unaligned reference or one that was beyond the end of the address space\n";
+
+    DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
+    SysHalt();
+
+    ASSERTNOTREACHED();
+    break;
+  }
+
+  case OverflowException:
+  {
+    cerr << "Interger overflow in add or sub\n";
+
+    DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
+    SysHalt();
+
+    ASSERTNOTREACHED();
+    break;
+  }
+
+  case IllegalInstrException:
+  {
+    cerr << "Unimplemented or reserved instruction\n";
+
+    DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
+    SysHalt();
+
+    ASSERTNOTREACHED();
+    break;
+  }
+
+  case NumExceptionTypes:
+  {
+    cerr << "NumExceptionTypes\n";
+
+    DEBUG(dbgSys, "Shutdown, initiated by ExceptionHandler.\n");
+    SysHalt();
+
+    ASSERTNOTREACHED();
+    break;
+  }
+  default:
+  {
+    cerr << "Unexpected user mode exception" << (int)which << "\n";
+    break;
+  }
+  }
+  ASSERTNOTREACHED();
 }
